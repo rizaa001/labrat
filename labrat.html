@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Virtual Mouse Project</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .dot-pulse {
+            animation: dot-pulse-fade 1.5s infinite;
+        }
+        .dot-pulse:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+        .dot-pulse:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+        @keyframes dot-pulse-fade {
+            0%, 80%, 100% {
+                opacity: 0.2;
+            }
+            40% {
+                opacity: 1;
+            }
+        }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-100 p-4 sm:p-8 flex flex-col items-center min-h-screen">
+
+    <!-- Page Title and Description -->
+    <header class="text-center mb-8 w-full max-w-4xl">
+        <h1 class="text-4xl sm:text-5xl font-bold tracking-tight text-white mb-2">
+            Virtual Lab Mouse
+        </h1>
+        <p class="text-md sm:text-lg text-slate-400">
+            A measurement to save lives.
+        </p>
+    </header>
+
+    <!-- Main content area for the virtual mouse and message box -->
+    <main class="w-full max-w-5xl flex-grow flex flex-col items-center justify-center bg-slate-800 rounded-3xl shadow-2xl p-6 sm:p-10 mb-8 relative border border-slate-700">
+        
+        <!-- Placeholder for the 3D mouse model -->
+        <div id="mouse-placeholder" class="w-full h-80 sm:h-96 bg-slate-900 rounded-2xl flex items-center justify-center text-slate-500 text-lg font-semibold border-2 border-dashed border-slate-700">
+        </div>
+
+        <!-- Message box for simulation feedback -->
+        <div id="message-box" class="absolute bottom-4 left-1/2 -translate-x-1/2 p-3 rounded-lg bg-blue-600 text-white shadow-lg transition-all duration-300 opacity-0 invisible">
+            Ready to inject!
+        </div>
+    </main>
+
+    <!-- Control panel below the mouse area -->
+    <footer class="w-full max-w-5xl bg-slate-800 rounded-3xl shadow-2xl p-4 sm:p-8 border border-slate-700">
+        <div class="flex justify-center mb-6">
+            <!-- Tabs for the main controls -->
+            <button id="tab-components" class="px-6 py-3 font-semibold text-lg border-b-4 border-blue-500 text-white transition-colors duration-200 focus:outline-none">
+                Components
+            </button>
+            <button id="tab-doses" class="px-6 py-3 font-semibold text-lg border-b-4 border-transparent text-slate-400 hover:text-white transition-colors duration-200 focus:outline-none">
+                Doses
+            </button>
+            <button id="tab-inject" class="px-6 py-3 font-semibold text-lg border-b-4 border-transparent text-slate-400 hover:text-white transition-colors duration-200 focus:outline-none">
+                Inject
+            </button>
+        </div>
+
+        <!-- Content area for the selected tab -->
+        <div id="tab-content" class="min-h-[100px] flex items-center justify-center">
+            
+            <!-- Components content (default active) -->
+            <div id="content-components" class="flex flex-wrap gap-2 justify-center">
+                <!-- Component buttons will be dynamically added here -->
+            </div>
+            
+            <!-- Doses content -->
+            <div id="content-doses" class="hidden flex-wrap gap-2 justify-center">
+                <!-- Dose buttons will be dynamically added here -->
+            </div>
+            
+            <!-- Inject content -->
+            <div id="content-inject" class="hidden">
+                <button id="inject-button" class="w-full mt-2 px-6 py-3 rounded-xl font-bold transition-all duration-300 bg-red-600 hover:bg-red-700 text-white disabled:bg-gray-500 disabled:cursor-not-allowed disabled:text-gray-400" disabled>
+                    Run Simulation
+                </button>
+            </div>
+        </div>
+    </footer>
+
+    <!-- JavaScript for interactivity -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const placeholder = document.getElementById('mouse-placeholder');
+            const componentsList = document.getElementById('content-components');
+            const dosesList = document.getElementById('content-doses');
+            const injectButton = document.getElementById('inject-button');
+            const messageBox = document.getElementById('message-box');
+            
+            const tabs = {
+                'components': document.getElementById('tab-components'),
+                'doses': document.getElementById('tab-doses'),
+                'inject': document.getElementById('tab-inject')
+            };
+            const tabContents = {
+                'components': document.getElementById('content-components'),
+                'doses': document.getElementById('content-doses'),
+                'inject': document.getElementById('content-inject')
+            };
+
+            let selectedComponent = null;
+            let selectedDose = null;
+            let activeTab = 'components';
+
+            // Mock data for chemical components and doses
+            const components = ['Paracetamol', 'Cyanide', 'Ibuprofen', 'Caffeine', 'Insulin'];
+            const doses = ['10mg', '50mg', '100mg', '250mg'];
+
+            // Function to update the Inject button state
+            const updateInjectButtonState = () => {
+                if (selectedComponent && selectedDose) {
+                    injectButton.disabled = false;
+                } else {
+                    injectButton.disabled = true;
+                }
+            };
+
+            // Function to handle tab clicks
+            const setActiveTab = (tabName) => {
+                activeTab = tabName;
+                for (const key in tabs) {
+                    const tab = tabs[key];
+                    const content = tabContents[key];
+                    if (key === tabName) {
+                        tab.classList.remove('text-slate-400', 'border-transparent', 'hover:text-white');
+                        tab.classList.add('text-white', 'border-blue-500');
+                        content.classList.remove('hidden');
+                        content.classList.add('flex');
+                    } else {
+                        tab.classList.remove('text-white', 'border-blue-500');
+                        tab.classList.add('text-slate-400', 'border-transparent', 'hover:text-white');
+                        content.classList.add('hidden');
+                        content.classList.remove('flex');
+                    }
+                }
+            };
+
+            // Populate the components buttons
+            components.forEach(component => {
+                const button = document.createElement('button');
+                button.textContent = component;
+                button.className = 'px-4 py-2 text-sm rounded-full font-semibold transition-all duration-200 bg-slate-600 hover:bg-blue-500 text-gray-200 hover:text-white';
+                button.addEventListener('click', () => {
+                    document.querySelectorAll('#content-components button').forEach(btn => {
+                        btn.classList.remove('bg-blue-500');
+                        btn.classList.add('bg-slate-600');
+                    });
+                    button.classList.add('bg-blue-500');
+                    button.classList.remove('bg-slate-600');
+                    selectedComponent = component;
+                    updateInjectButtonState();
+                });
+                componentsList.appendChild(button);
+            });
+
+            // Populate the doses buttons
+            doses.forEach(dose => {
+                const button = document.createElement('button');
+                button.textContent = dose;
+                button.className = 'px-4 py-2 text-sm rounded-full font-semibold transition-all duration-200 bg-slate-600 hover:bg-teal-500 text-gray-200 hover:text-white';
+                button.addEventListener('click', () => {
+                    document.querySelectorAll('#content-doses button').forEach(btn => {
+                        btn.classList.remove('bg-teal-500');
+                        btn.classList.add('bg-slate-600');
+                    });
+                    button.classList.add('bg-teal-500');
+                    button.classList.remove('bg-slate-600');
+                    selectedDose = dose;
+                    updateInjectButtonState();
+                });
+                dosesList.appendChild(button);
+            });
+
+            // Handle the Inject button click
+            injectButton.addEventListener('click', () => {
+                if (selectedComponent && selectedDose) {
+                    const message = `Simulating injection of ${selectedDose} of ${selectedComponent}.`;
+                    messageBox.textContent = message;
+                    messageBox.classList.remove('opacity-0', 'invisible');
+                    
+                    setTimeout(() => {
+                        messageBox.classList.add('opacity-0', 'invisible');
+                    }, 4000);
+                    
+                    placeholder.innerHTML = `<p>Simulating...</p>`;
+                    setTimeout(() => {
+                        placeholder.innerHTML = `<p>Simulation complete. Results will display here.</p>`;
+                    }, 2000);
+                }
+            });
+
+            // Set up tab click listeners
+            tabs['components'].addEventListener('click', () => setActiveTab('components'));
+            tabs['doses'].addEventListener('click', () => setActiveTab('doses'));
+            tabs['inject'].addEventListener('click', () => setActiveTab('inject'));
+
+            // Initial content for the placeholder
+            const initialHtml = `<p>Placeholder for the virtual mouse 3D model.</p>`;
+            placeholder.innerHTML = initialHtml;
+        });
+    </script>
+</body>
+</html>
